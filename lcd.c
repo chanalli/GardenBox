@@ -1,315 +1,258 @@
-/****************************************************************************
-    LCD-AVR-4d.c  - Use an HD44780U based LCD with an Atmel ATmega processor
+/*************************************************************
+*       at328-5.c - Demonstrate interface to a parallel LCD display
+*
+*       This program will print a message on an LCD display
+*       using the 4-bit wide interface method
+*
+*       PORTB, bit 4 (0x10) - output to RS (Register Select) input of display
+*              bit 3 (0x08) - output to R/W (Read/Write) input of display
+*              bit 2 (0x04) - output to E (Enable) input of display
+*       PORTB, bits 0-1, PORTD, bits 2-7 - Outputs to DB0-DB7 inputs of display.
+*
+*       The second line of the display starts at address 0x40.
+*
+* Revision History
+* Date     Author      Description
+* 11/17/05 A. Weber    First Release for 8-bit interface
+* 01/13/06 A. Weber    Modified for CodeWarrior 5.0
+* 08/25/06 A. Weber    Modified for JL16 processor
+* 05/08/07 A. Weber    Some editing changes for clarification
+* 06/25/07 A. Weber    Updated name of direct page segment
+* 08/17/07 A. Weber    Incorporated changes to demo board
+* 01/15/08 A. Weber    More changes to the demo board
+* 02/12/08 A. Weber    Changed 2nd LCD line address
+* 04/22/08 A. Weber    Added "one" variable to make warning go away
+* 04/15/11 A. Weber    Adapted for ATmega168
+* 01/30/12 A. Weber    Moved the LCD strings into ROM
+* 02/27/12 A. Weber    Corrected port bit assignments above
+* 11/18/13 A. Weber    Renamed for ATmega328P
+* 04/10/15 A. Weber    Extended "E" pulse, renamed strout to strout_P
+* 05/06/17 A. Weber    Change to use new LCD routines
+*************************************************************/
 
-    Copyright (C) 2013 Donald Weiman    (weimandn@alfredstate.edu)
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-/****************************************************************************
-         File:    LCD-AVR-4d.c
-         Date:    September 16, 2013
-
-       Target:    ATmega328
-     Compiler:    avr-gcc (AVR Studio 6)
-       Author:    Donald Weiman
-
-      Summary:    4-bit data interface, busy flag not implemented.
-                  Any LCD pin can be connected to any available I/O port.
-                  Includes a simple write string routine.
- */
-/******************************* Program Notes ******************************
-
-            This program uses a 4-bit data interface but does not use the
-              busy flag to determine when the LCD controller is ready.  The
-              LCD RW line (pin 5) is not connected to the uP and it must be
-              connected to GND for the program to function.
-
-            All time delays are longer than those specified in most datasheets
-              in order to accommodate slower than normal LCD modules.  This
-              requirement is well documented but almost always ignored.  The
-              information is in a note at the bottom of the right hand
-              (Execution Time) column of the instruction set.
-
-  ***************************************************************************
-
-            The four data lines as well as the two control lines may be
-              implemented on any available I/O pin of any port.  These are
-              the connections used for this program:
-
-                 -----------                   ----------
-                | ATmega328 |                 |   LCD    |
-                |           |                 |          |
-                |        PD7|---------------->|D7        |
-                |        PD6|---------------->|D6        |
-                |        PD5|---------------->|D5        |
-                |        PD4|---------------->|D4        |
-                |           |                 |D3        |
-                |           |                 |D2        |
-                |           |                 |D1        |
-                |           |                 |D0        |
-                |           |                 |          |
-                |        PB1|---------------->|E         |
-                |           |         GND --->|RW        |
-                |        PB0|---------------->|RS        |
-                 -----------                   ----------
-
-  **************************************************************************/
 #include <avr/io.h>
 #include <util/delay.h>
+#include <avr/pgmspace.h>
 
-// LCD interface (should agree with the diagram above)
-//   make sure that the LCD RW pin is connected to GND
-#define lcd_D7_port     PORTD                   // lcd D7 connection
-#define lcd_D7_bit      PORTD7
-#define lcd_D7_ddr      DDRD
-
-#define lcd_D6_port     PORTD                   // lcd D6 connection
-#define lcd_D6_bit      PORTD6
-#define lcd_D6_ddr      DDRD
-
-#define lcd_D5_port     PORTD                   // lcd D5 connection
-#define lcd_D5_bit      PORTD5
-#define lcd_D5_ddr      DDRD
-
-#define lcd_D4_port     PORTD                   // lcd D4 connection
-#define lcd_D4_bit      PORTD4
-#define lcd_D4_ddr      DDRD
-
-#define lcd_E_port      PORTB                   // lcd Enable pin
-#define lcd_E_bit       PORTB1
-#define lcd_E_ddr       DDRB
-
-#define lcd_RS_port     PORTB                   // lcd Register Select pin
-#define lcd_RS_bit      PORTB0
-#define lcd_RS_ddr      DDRB
-
-// LCD module information
-#define lcd_LineOne     0x00                    // start of line 1
-#define lcd_LineTwo     0x40                    // start of line 2
-//#define   lcd_LineThree   0x14                  // start of line 3 (20x4)
-//#define   lcd_lineFour    0x54                  // start of line 4 (20x4)
-//#define   lcd_LineThree   0x10                  // start of line 3 (16x4)
-//#define   lcd_lineFour    0x50                  // start of line 4 (16x4)
-
-// LCD instructions
-#define lcd_Clear           0b00000001          // replace all characters with ASCII 'space'
-#define lcd_Home            0b00000010          // return cursor to first position on first line
-#define lcd_EntryMode       0b00000110          // shift cursor from left to right on read/write
-#define lcd_DisplayOff      0b00001000          // turn display off
-#define lcd_DisplayOn       0b00001100          // display on, cursor off, don't blink character
-#define lcd_FunctionReset   0b00110000          // reset the LCD
-#define lcd_FunctionSet4bit 0b00101000          // 4-bit data, 2-line display, 5 x 7 font
-#define lcd_SetCursor       0b10000000          // set cursor position
-
-// Program ID
-uint8_t program_author[]   = "Donald Weiman";
-uint8_t program_version[]  = "LCD-AVR-4d (gcc)";
-uint8_t program_date[]     = "Sep 16, 2013";
-
-// Function Prototypes
-void lcd_write_4(uint8_t);
-void lcd_write_instruction_4d(uint8_t);
-void lcd_write_character_4d(uint8_t);
-void lcd_write_string_4d(uint8_t *);
-void lcd_init_4d(void);
-
-/******************************* Main Program Code *************************/
-int main(void)
-{
-// configure the microprocessor pins for the data lines
-    lcd_D7_ddr |= (1<<lcd_D7_bit);                  // 4 data lines - output
-    lcd_D6_ddr |= (1<<lcd_D6_bit);
-    lcd_D5_ddr |= (1<<lcd_D5_bit);
-    lcd_D4_ddr |= (1<<lcd_D4_bit);
-
-// configure the microprocessor pins for the control lines
-    lcd_E_ddr |= (1<<lcd_E_bit);                    // E line - output
-    lcd_RS_ddr |= (1<<lcd_RS_bit);                  // RS line - output
-
-// initialize the LCD controller as determined by the defines (LCD instructions)
-    lcd_init_4d();                                  // initialize the LCD display for a 4-bit interface
-
-// display the first line of information
-    lcd_write_string_4d(program_author);
-
-// set cursor to start of second line
-    lcd_write_instruction_4d(lcd_SetCursor | lcd_LineTwo);
-    _delay_us(80);                                  // 40 uS delay (min)
-
-// display the second line of information
-    lcd_write_string_4d(program_version);
-
-// endless loop
-    while(1);
-    return 0;
-}
-/******************************* End of Main Program Code ******************/
-
-/*============================== 4-bit LCD Functions ======================*/
 /*
-  Name:     lcd_init_4d
-  Purpose:  initialize the LCD module for a 4-bit data interface
-  Entry:    equates (LCD instructions) set up for the desired operation
-  Exit:     no parameters
-  Notes:    uses time delays rather than checking the busy flag
+  The NIBBLE_HIGH condition determines which PORT bits are used to
+  transfer data to data bits 4-7 of the LCD.
+  If LCD data bits 4-7 are connected to PORTD, bits 4-7, define NIBBLE_HIGH
+  If LCD data bits 4-7 are connected to PORTD, bits 2-3 and PORTB bits 0-1,
+  don't define NIBBLE_HIGH.
 */
-void lcd_init_4d(void)
-{
-// Power-up delay
-    _delay_ms(100);                                 // initial 40 mSec delay
+#define NIBBLE_HIGH                 // Use bits 4-7 for talking to LCD
 
-// IMPORTANT - At this point the LCD module is in the 8-bit mode and it is expecting to receive
-//   8 bits of data, one bit on each of its 8 data lines, each time the 'E' line is pulsed.
-//
-// Since the LCD module is wired for the 4-bit mode, only the upper four data lines are connected to
-//   the microprocessor and the lower four data lines are typically left open.  Therefore, when
-//   the 'E' line is pulsed, the LCD controller will read whatever data has been set up on the upper
-//   four data lines and the lower four data lines will be high (due to internal pull-up circuitry).
-//
-// Fortunately the 'FunctionReset' instruction does not care about what is on the lower four bits so
-//   this instruction can be sent on just the four available data lines and it will be interpreted
-//   properly by the LCD controller.  The 'lcd_write_4' subroutine will accomplish this if the
-//   control lines have previously been configured properly.
+void lcd_init(void);
+void lcd_moveto(unsigned char, unsigned char);
+void lcd_stringout(char *);
+void lcd_writecommand(unsigned char);
+void lcd_writedata(unsigned char);
+void lcd_writebyte(unsigned char);
+void lcd_writenibble(unsigned char);
+void lcd_wait(void);
+void lcd_stringout_P(char *);
 
-// Set up the RS and E lines for the 'lcd_write_4' subroutine.
-    lcd_RS_port &= ~(1<<lcd_RS_bit);                // select the Instruction Register (RS low)
-    lcd_E_port &= ~(1<<lcd_E_bit);                  // make sure E is initially low
+/*
+  Use the "PROGMEM" attribute to store the strings in the ROM
+  instead of in RAM.
+*/
+#ifdef NIBBLE_HIGH
+const unsigned char str1[] PROGMEM = ">> at328-5.c hi <<901234";
+#else
+const unsigned char str1[] PROGMEM = ">> at328-5.c lo <<901234";
+#endif
+const unsigned char str2[] PROGMEM = ">> USC EE459L <<78901234";
 
-// Reset the LCD controller
-    lcd_write_4(lcd_FunctionReset);                 // first part of reset sequence
-    _delay_ms(10);                                  // 4.1 mS delay (min)
+#define LCD_RS          (1 << PB4)
+#define LCD_RW          (1 << PB3)
+#define LCD_E           (1 << PB2)
+#define LCD_Bits        (LCD_RS|LCD_RW|LCD_E)
 
-    lcd_write_4(lcd_FunctionReset);                 // second part of reset sequence
-    _delay_us(200);                                 // 100uS delay (min)
+#ifdef NIBBLE_HIGH
+#define LCD_Data_D     0xf0     // Bits in Port D for LCD data
+#define LCD_Status     0x80     // Bit in Port D for LCD busy status
+#else
+#define LCD_Data_B     0x03     // Bits in Port B for LCD data
+#define LCD_Data_D     0x0c     // Bits in Port D for LCD data
+#define LCD_Status     (1 << PD7) // Bit in Port D for LCD busy status
+#endif
 
-    lcd_write_4(lcd_FunctionReset);                 // third part of reset sequence
-    _delay_us(200);                                 // this delay is omitted in the data sheet
+int main(void) {
 
-// Preliminary Function Set instruction - used only to set the 4-bit mode.
-// The number of lines or the font cannot be set at this time since the controller is still in the
-//  8-bit mode, but the data transfer mode can be changed since this parameter is determined by one
-//  of the upper four bits of the instruction.
+    lcd_init();                 // Initialize the LCD display
 
-    lcd_write_4(lcd_FunctionSet4bit);               // set 4-bit mode
-    _delay_us(80);                                  // 40uS delay (min)
 
-// Function Set instruction
-    lcd_write_instruction_4d(lcd_FunctionSet4bit);   // set mode, lines, and font
-    _delay_us(80);                                  // 40uS delay (min)
+    while (1) {                 // Loop forever
+      lcd_moveto(0, 0);
+      lcd_stringout_P((char *)str1);      // Print string on line 1
 
-// The next three instructions are specified in the data sheet as part of the initialization routine,
-//  so it is a good idea (but probably not necessary) to do them just as specified and then redo them
-//  later if the application requires a different configuration.
+      lcd_moveto(1, 0);
+      lcd_stringout_P((char *)str2);      // Print string on line 2
+    }
 
-// Display On/Off Control instruction
-    lcd_write_instruction_4d(lcd_DisplayOff);        // turn display OFF
-    _delay_us(80);                                  // 40uS delay (min)
-
-// Clear Display instruction
-    lcd_write_instruction_4d(lcd_Clear);             // clear display RAM
-    _delay_ms(4);                                   // 1.64 mS delay (min)
-
-// ; Entry Mode Set instruction
-    lcd_write_instruction_4d(lcd_EntryMode);         // set desired shift characteristics
-    _delay_us(80);                                  // 40uS delay (min)
-
-// This is the end of the LCD controller initialization as specified in the data sheet, but the display
-//  has been left in the OFF condition.  This is a good time to turn the display back ON.
-
-// Display On/Off Control instruction
-    lcd_write_instruction_4d(lcd_DisplayOn);         // turn the display ON
-    _delay_us(80);                                  // 40uS delay (min)
+    return 0;   /* never reached */
 }
 
-/*...........................................................................
-  Name:     lcd_write_string_4d
-; Purpose:  display a string of characters on the LCD
-  Entry:    (theString) is the string to be displayed
-  Exit:     no parameters
-  Notes:    uses time delays rather than checking the busy flag
+/*
+  lcd_stringout_P - Print the contents of the character string "s" starting at LCD
+  RAM location "x" where the string is stored in ROM.  The string must be
+  terminated by a zero byte.
 */
-void lcd_write_string_4d(uint8_t theString[])
+void lcd_stringout_P(char *s)
 {
-    volatile int i = 0;                             // character counter*/
-    while (theString[i] != 0)
-    {
-        lcd_write_character_4d(theString[i]);
-        i++;
-        _delay_us(80);                              // 40 uS delay (min)
+    unsigned char ch;
+
+    /* Use the "pgm_read_byte()" routine to read the date from ROM */
+    while ((ch = pgm_read_byte(s++)) != '\0') {
+        lcd_writedata(ch);             // Output the next character
     }
 }
 
-/*...........................................................................
-  Name:     lcd_write_character_4d
-  Purpose:  send a byte of information to the LCD data register
-  Entry:    (theData) is the information to be sent to the data register
-  Exit:     no parameters
-  Notes:    does not deal with RW (busy flag is not implemented)
+/*
+  lcd_init - Do various things to force a initialization of the LCD
+  display by instructions, and then set up the display parameters and
+  turn the display on.
 */
-
-void lcd_write_character_4d(uint8_t theData)
+void lcd_init(void)
 {
-    lcd_RS_port |= (1<<lcd_RS_bit);                 // select the Data Register (RS high)
-    lcd_E_port &= ~(1<<lcd_E_bit);                  // make sure E is initially low
-    lcd_write_4(theData);                           // write the upper 4-bits of the data
-    lcd_write_4(theData << 4);                      // write the lower 4-bits of the data
+#ifdef NIBBLE_HIGH
+    DDRD |= LCD_Data_D;         // Set PORTD bits 4-7 for output
+#else
+    DDRB |= LCD_Data_B;         // Set PORTB bits 0-1 for output
+    DDRD |= LCD_Data_D;         // Set PORTD bits 2-3 for output
+#endif
+    DDRB |= LCD_Bits;           // Set PORTB bits 2, 3 and 4 for output
+
+    PORTB &= ~LCD_RS;           // Clear RS for command write
+
+    _delay_ms(15);              // Delay at least 15ms
+
+    lcd_writenibble(0x30);      // Send 00110000, set for 8-bit interface
+    _delay_ms(5);               // Delay at least 4msec
+
+    lcd_writenibble(0x30);      // Send 00110000, set for 8-bit interface
+    _delay_us(120);             // Delay at least 100usec
+
+    lcd_writenibble(0x30);      // Send 00110000, set for 8-bit interface
+    _delay_ms(2);
+
+    lcd_writenibble(0x20);      // Send 00100000, set for 4-bit interface
+    _delay_ms(2);
+
+    lcd_writecommand(0x28);     // Function Set: 4-bit interface, 2 lines
+
+    lcd_writecommand(0x0f);     // Display and cursor on
 }
 
-/*...........................................................................
-  Name:     lcd_write_instruction_4d
-  Purpose:  send a byte of information to the LCD instruction register
-  Entry:    (theInstruction) is the information to be sent to the instruction register
-  Exit:     no parameters
-  Notes:    does not deal with RW (busy flag is not implemented)
+/*
+  lcd_moveto - Move the cursor to the row and column given by the arguments.
+  Row is 0 or 1, column is 0 - 15.
 */
-void lcd_write_instruction_4d(uint8_t theInstruction)
+void lcd_moveto(unsigned char row, unsigned char col)
 {
-    lcd_RS_port &= ~(1<<lcd_RS_bit);                // select the Instruction Register (RS low)
-    lcd_E_port &= ~(1<<lcd_E_bit);                  // make sure E is initially low
-    lcd_write_4(theInstruction);                    // write the upper 4-bits of the data
-    lcd_write_4(theInstruction << 4);               // write the lower 4-bits of the data
+    unsigned char pos;
+    pos = row * 0x40 + col;
+    lcd_writecommand(0x80 | pos);
 }
 
-
-/*...........................................................................
-  Name:     lcd_write_4
-  Purpose:  send a byte of information to the LCD module
-  Entry:    (theByte) is the information to be sent to the desired LCD register
-            RS is configured for the desired LCD register
-            E is low
-            RW is low
-  Exit:     no parameters
-  Notes:    use either time delays or the busy flag
+/*
+  lcd_stringout - Print the contents of the character string "str"
+  at the current cursor position.
 */
-void lcd_write_4(uint8_t theByte)
+void lcd_stringout(char *str)
 {
-    lcd_D7_port &= ~(1<<lcd_D7_bit);                        // assume that data is '0'
-    if (theByte & 1<<7) lcd_D7_port |= (1<<lcd_D7_bit);     // make data = '1' if necessary
+    char ch;
+    while ((ch = *str++) != '\0')
+	lcd_writedata(ch);
+}
 
-    lcd_D6_port &= ~(1<<lcd_D6_bit);                        // repeat for each data bit
-    if (theByte & 1<<6) lcd_D6_port |= (1<<lcd_D6_bit);
+/*
+  lcd_writecommand - Output a byte to the LCD command register.
+*/
+void lcd_writecommand(unsigned char x)
+{
+    PORTB &= ~LCD_RS;       // Clear RS for command write
+    lcd_writebyte(x);
+    lcd_wait();
+}
 
-    lcd_D5_port &= ~(1<<lcd_D5_bit);
-    if (theByte & 1<<5) lcd_D5_port |= (1<<lcd_D5_bit);
+/*
+  lcd_writedata - Output a byte to the LCD data register
+*/
+void lcd_writedata(unsigned char x)
+{
+    PORTB |= LCD_RS;	// Set RS for data write
+    lcd_writebyte(x);
+    lcd_wait();
+}
 
-    lcd_D4_port &= ~(1<<lcd_D4_bit);
-    if (theByte & 1<<4) lcd_D4_port |= (1<<lcd_D4_bit);
+/*
+  lcd_writebyte - Output a byte to the LCD
+*/
+void lcd_writebyte(unsigned char x)
+{
+    lcd_writenibble(x);
+    lcd_writenibble(x << 4);
+}
 
-// write the data
-                                                    // 'Address set-up time' (40 nS)
-    lcd_E_port |= (1<<lcd_E_bit);                   // Enable pin high
-    _delay_us(1);                                   // implement 'Data set-up time' (80 nS) and 'Enable pulse width' (230 nS)
-    lcd_E_port &= ~(1<<lcd_E_bit);                  // Enable pin low
-    _delay_us(1);                                   // implement 'Data hold time' (10 nS) and 'Enable cycle time' (500 nS)
+/*
+  lcd_writenibble - Output a 4-bit nibble to the LCD
+*/
+void lcd_writenibble(unsigned char x)
+{
+#ifdef NIBBLE_HIGH
+    PORTD &= ~LCD_Data_D;
+    PORTD |= (x & LCD_Data_D);  // Put high 4 bits of data in PORTD
+#else
+    PORTB &= ~LCD_Data_B;
+    PORTB |= (x & LCD_Data_B);  // Put low 2 bits of data in PORTB
+    PORTD &= ~LCD_Data_D;
+    PORTD |= (x & LCD_Data_D);  // Put high 2 bits of data in PORTD
+#endif
+    PORTB &= ~(LCD_RW|LCD_E);   // Set R/W=0, E=0
+    PORTB |= LCD_E;             // Set E to 1
+    PORTB |= LCD_E;             // Extend E pulse > 230ns
+    PORTB &= ~LCD_E;            // Set E to 0
+}
+
+/*
+  lcd_wait - Wait for the BUSY flag to reset
+*/
+void lcd_wait()
+{
+#ifdef USE_BUSY_FLAG
+    unsigned char bf;
+
+#ifdef NIBBLE_HIGH
+    PORTD &= ~LCD_Data_D;       // Set for no pull ups
+    DDRD &= ~LCD_Data_D;        // Set for input
+#else
+    PORTB &= ~LCD_Data_B;       // Set for no pull ups
+    PORTD &= ~LCD_Data_D;
+    DDRB &= ~LCD_Data_B;        // Set for input
+    DDRD &= ~LCD_Data_D;
+#endif
+
+    PORTB &= ~(LCD_E|LCD_RS);   // Set E=0, R/W=1, RS=0
+    PORTB |= LCD_RW;
+
+    do {
+        PORTB |= LCD_E;         // Set E=1
+        _delay_us(1);           // Wait for signal to appear
+        bf = PIND & LCD_Status; // Read status register high bits
+        PORTB &= ~LCD_E;        // Set E=0
+	PORTB |= LCD_E;         // Need to clock E a second time to fake
+	PORTB &= ~LCD_E;        //   getting the status register low bits
+    } while (bf != 0);          // If Busy (PORTD, bit 7 = 1), loop
+
+#ifdef NIBBLE_HIGH
+    DDRD |= LCD_Data_D;         // Set PORTD bits for output
+#else
+    DDRB |= LCD_Data_B;         // Set PORTB, PORTD bits for output
+    DDRD |= LCD_Data_D;
+#endif
+#else
+    _delay_ms(2);		// Delay for 2ms
+#endif
 }
