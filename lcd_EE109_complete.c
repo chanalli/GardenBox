@@ -18,10 +18,10 @@ void writenibble(unsigned char);
 
     /* Main program goes here */
 	//initiating both adc conversion and lcd
-	
+
 	//init_lcd();
-	
-	
+
+
 
    // return 0;   /* never reached */
 //}
@@ -31,7 +31,7 @@ void writenibble(unsigned char);
 */
 void init_lcd()
 {
-	DDRC|=(1<<6)
+	DDRC|=(1<<6);
 	DDRD|=(1<<0);
 	DDRD|=(1<<1)|(1<<2)|(1<<3)|(1<<4);
     _delay_ms(15);              // Delay at least 15ms
@@ -46,7 +46,7 @@ void init_lcd()
 
     writenibble(0x02);                  // Use writenibble to send 0010
     _delay_ms(2);               // Delay at least 2ms
-    
+
     writecommand(0x28);         // Function Set: 4-bit interface, 2 lines
 
     writecommand(0x0f);         // Display and cursor on
@@ -71,7 +71,7 @@ else
 */
 void stringout(char *str)
 
-{	int i=0;                                                                                                                                                         
+{	int i=0;
 	while (str[i]!=0)
 	{
 	writedata(str[i]);
@@ -103,7 +103,7 @@ void writedata(unsigned char x)
 
 /*
   writenibble - Output four bits from "x" to the LCD
- 
+
 */
 
 void writenibble(unsigned char x)
@@ -114,5 +114,3 @@ void writenibble(unsigned char x)
 	PORTB|=(1<<PB1);
 	PORTB &= ~(1<<PB1);
 }
-
-
