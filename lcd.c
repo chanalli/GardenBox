@@ -58,11 +58,11 @@ void lcd_stringout_P(char *);
   instead of in RAM.
 */
 #ifdef NIBBLE_HIGH
-const unsigned char str1[] PROGMEM = ">> at328-5.c hi <<901234";
+const unsigned char str1[] PROGMEM = "Moisture: ";
 #else
 const unsigned char str1[] PROGMEM = ">> at328-5.c lo <<901234";
 #endif
-const unsigned char str2[] PROGMEM = ">> USC EE459L <<78901234";
+const unsigned char str2[] PROGMEM = "Temperature: ";
 
 #define LCD_RS          (1 << PB4)
 #define LCD_RW          (1 << PB3)
@@ -81,14 +81,15 @@ const unsigned char str2[] PROGMEM = ">> USC EE459L <<78901234";
 int main(void) {
 
     lcd_init();                 // Initialize the LCD display
-
-
+	lcd_writecommand(0x01);     // clears screen
+	lcd_moveto(0, 0);
+	lcd_stringout_P((char *)str1);      // Print string on line 1
+	lcd_moveto(1, 0);
+    lcd_stringout_P((char *)str2);      // Print string on line 2
+	lcd_writecommand(0x0c);     // cursor off
     while (1) {                 // Loop forever
-      lcd_moveto(0, 0);
-      lcd_stringout_P((char *)str1);      // Print string on line 1
-
-      lcd_moveto(1, 0);
-      lcd_stringout_P((char *)str2);      // Print string on line 2
+     
+      
     }
 
     return 0;   /* never reached */
@@ -166,6 +167,8 @@ void lcd_stringout(char *str)
     while ((ch = *str++) != '\0')
 	lcd_writedata(ch);
 }
+
+
 
 /*
   lcd_writecommand - Output a byte to the LCD command register.
