@@ -2,8 +2,9 @@
 *       at328-5.c - Demonstrate interface to a parallel LCD display
 *
 *       This program will print a message on an LCD display
-*       using the 4-bit wide interface method
+*       using the 4-bit wide interface method for a 4x20 LCD
 *
+//TODO: we should edits these
 *       PORTB, bit 4 (0x10) - output to RS (Register Select) input of display
 *              bit 3 (0x08) - output to R/W (Read/Write) input of display
 *              bit 2 (0x04) - output to E (Enable) input of display
@@ -11,23 +12,7 @@
 *
 *       The second line of the display starts at address 0x40.
 *
-* Revision History
-* Date     Author      Description
-* 11/17/05 A. Weber    First Release for 8-bit interface
-* 01/13/06 A. Weber    Modified for CodeWarrior 5.0
-* 08/25/06 A. Weber    Modified for JL16 processor
-* 05/08/07 A. Weber    Some editing changes for clarification
-* 06/25/07 A. Weber    Updated name of direct page segment
-* 08/17/07 A. Weber    Incorporated changes to demo board
-* 01/15/08 A. Weber    More changes to the demo board
-* 02/12/08 A. Weber    Changed 2nd LCD line address
-* 04/22/08 A. Weber    Added "one" variable to make warning go away
-* 04/15/11 A. Weber    Adapted for ATmega168
-* 01/30/12 A. Weber    Moved the LCD strings into ROM
-* 02/27/12 A. Weber    Corrected port bit assignments above
-* 11/18/13 A. Weber    Renamed for ATmega328P
-* 04/10/15 A. Weber    Extended "E" pulse, renamed strout to strout_P
-* 05/06/17 A. Weber    Change to use new LCD routines
+*       Code adapted from Professor Allen Weber.
 *************************************************************/
 
 #include <avr/io.h>
@@ -59,10 +44,12 @@ void lcd_stringout_P(char *);
 */
 #ifdef NIBBLE_HIGH
 const unsigned char str1[] PROGMEM = "Moisture: ";
+const unsigned char str2[] PROGMEM = "Temperature: ";
+const unsigned char str3[] PROGMEM = "Humidity: ";
+const unsigned char str4[] PROGMEM = "UV: ";
 #else
 const unsigned char str1[] PROGMEM = ">> at328-5.c lo <<901234";
 #endif
-const unsigned char str2[] PROGMEM = "Temperature: ";
 
 #define LCD_RS          (1 << PB4)
 #define LCD_RW          (1 << PB3)
@@ -80,19 +67,24 @@ const unsigned char str2[] PROGMEM = "Temperature: ";
 
 int main(void) {
 
-    lcd_init();                 // Initialize the LCD display
+  lcd_init();                 // Initialize the LCD display
 	lcd_writecommand(0x01);     // clears screen
+  lcd_writecommand(0x0c);     // cursor off
+
+  //four lines of information;
 	lcd_moveto(0, 0);
 	lcd_stringout_P((char *)str1);      // Print string on line 1
 	lcd_moveto(1, 0);
-    lcd_stringout_P((char *)str2);      // Print string on line 2
-	lcd_writecommand(0x0c);     // cursor off
-    while (1) {                 // Loop forever
-     
-      
-    }
+  lcd_stringout_P((char *)str2);      // Print string on line 2
+  lcd_moveto(2, 0);
+  lcd_stringout_P((char *)str3);      // Print string on line 3
+  lcd_moveto(3, 0);
+  lcd_stringout_P((char *)str4);      // Print string on line 3
 
-    return 0;   /* never reached */
+  while (1) {                 // Loop forever
+  }
+
+  return 0;   /* never reached */
 }
 
 /*
@@ -152,9 +144,17 @@ void lcd_init(void)
 */
 void lcd_moveto(unsigned char row, unsigned char col)
 {
-    unsigned char pos;
-    pos = row * 0x40 + col;
-    lcd_writecommand(0x80 | pos);
+
+  char addr = '0';
+  switch(row){
+     case 0: addr = 0x00; break; //Starting address of 1st line
+     case 1: addr = 0x40; break; //Starting address of 2nd line
+     case 2: addr = 0x14; break; //Starting address of 3rd line
+     case 3: addr = 0x54; break; //Starting address of 4th line
+     default: ;
+  }
+  addr += col;
+  lcd_writecommand(0x80|addr);
 }
 
 /*
@@ -165,10 +165,8 @@ void lcd_stringout(char *str)
 {
     char ch;
     while ((ch = *str++) != '\0')
-	lcd_writedata(ch);
+	   lcd_writedata(ch);
 }
-
-
 
 /*
   lcd_writecommand - Output a byte to the LCD command register.
