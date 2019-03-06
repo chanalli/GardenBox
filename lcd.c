@@ -71,17 +71,19 @@ int main(void) {
 	lcd_writecommand(0x01);     // clears screen
   lcd_writecommand(0x0c);     // cursor off
 
-  //four lines of information;
-	lcd_moveto(0, 0);
-	lcd_stringout_P((char *)str1);      // Print string on line 1
-	lcd_moveto(1, 0);
-  lcd_stringout_P((char *)str2);      // Print string on line 2
-  lcd_moveto(2, 0);
-  lcd_stringout_P((char *)str3);      // Print string on line 3
-  lcd_moveto(3, 0);
-  lcd_stringout_P((char *)str4);      // Print string on line 3
-
   while (1) {                 // Loop forever
+    //TODO: eventually make functions for each of these lines
+    //each line will call a function to receive data
+
+    //four lines of information;
+    lcd_moveto(0, 0);
+  	lcd_stringout_P((char *)str1);      // Print string on line 1
+  	lcd_moveto(1, 0);
+    lcd_stringout_P((char *)str2);      // Print string on line 2
+    lcd_moveto(2, 0);
+    lcd_stringout_P((char *)str3);      // Print string on line 3
+    lcd_moveto(3, 0);
+    lcd_stringout_P((char *)str4);      // Print string on line 3
   }
 
   return 0;   /* never reached */
