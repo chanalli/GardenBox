@@ -24,6 +24,7 @@ void variable_delay_us(int);
 int main(void) {
 	lcd_init();
 	lcd_init_display();
+	// lcd_writecommand(0x01);
 	//enable timer interrupt
 	TIMSK1|=(1<<OCIE1A);
 
