@@ -24,21 +24,20 @@ void variable_delay_us(int);
 int main(void) {
 	lcd_init();
 	lcd_init_display();
-	lcd_writecommand(0x01);
 	//enable timer interrupt
 	TIMSK1|=(1<<OCIE1A);
-	
-	
+
+
 	//enable interrupts
 	sei();
-	
+
 	//initilize rotaryencoder interrupts
 	PORTB |=(1<<PB3)|(1<<PB5);
 	PCICR|=(1<<PCIE0);
 	PCMSK0|=(1<<PCINT3)|(1<<PCINT5);
-	
+
 	return 0;
-	
+
 }
 
 ISR(PCINT0_vect)
@@ -94,9 +93,9 @@ ISR(PCINT0_vect)
 		{
 			state=1;
 			direction=1;
-		}			
+		}
 	}
-	
+
 	//decrementing
 	if(direction==0)
 	{
@@ -111,14 +110,14 @@ ISR(PCINT0_vect)
 			count=count-1;
 		}
 	}
-//incrementing	
+//incrementing
 	else
 	{
 		if(count>=25)
 		{
 			//highest count
 			count=25;
-		}	
+		}
 		else
 		{
 			//incrementing count

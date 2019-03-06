@@ -65,30 +65,29 @@ const unsigned char str1[] PROGMEM = ">> at328-5.c lo <<901234";
 #define LCD_Status     (1 << PD7) // Bit in Port D for LCD busy status
 #endif
 
-int main(void) {
+//************TESTING ONLY*************//
+// void main(){
+//   //this main is only for testing
+//   lcd_init_display();
+//   return 0;
+// }
+
+void lcd_init_display(){
 
   lcd_init();                 // Initialize the LCD display
 	lcd_writecommand(0x01);     // clears screen
   lcd_writecommand(0x0c);     // cursor off
 
-  while (1) {                 // Loop forever
-    //TODO: eventually make functions for each of these lines
-    //each line will call a function to receive data
+  lcd_moveto(0, 0);
+  lcd_stringout_P((char *)str1);      // Print string on line 1
+  lcd_moveto(1, 0);
+  lcd_stringout_P((char *)str2);      // Print string on line 2
+  lcd_moveto(2, 0);
+  lcd_stringout_P((char *)str3);      // Print string on line 3
+  lcd_moveto(3, 0);
+  lcd_stringout_P((char *)str4);      // Print string on line 3
 
-    //four lines of information;
-    lcd_moveto(0, 0);
-  	lcd_stringout_P((char *)str1);      // Print string on line 1
-  	lcd_moveto(1, 0);
-    lcd_stringout_P((char *)str2);      // Print string on line 2
-    lcd_moveto(2, 0);
-    lcd_stringout_P((char *)str3);      // Print string on line 3
-    lcd_moveto(3, 0);
-    lcd_stringout_P((char *)str4);      // Print string on line 3
-  }
-
-  return 0;   /* never reached */
 }
-
 /*
   lcd_stringout_P - Print the contents of the character string "s" starting at LCD
   RAM location "x" where the string is stored in ROM.  The string must be
