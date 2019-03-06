@@ -1,3 +1,4 @@
-RS: PD0
-E: PC6
-LCD D[4:7]: PD[1:4]
+currently main is in rotary encoder .c
+want to move it to gardenbox.c
+
+need to finish code for soil moisture sensor
