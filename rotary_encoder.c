@@ -3,7 +3,7 @@
  *  Name:
  *  Email:
  *  Section:
- *  Assignment: Lab 7 - Rotary Encoder
+ *  Assignment: Rotary Encoder
  *
  ********************************************/
 
@@ -24,25 +24,25 @@ volatile unsigned char tempDirection=0;
 // current moisture rotary state
 volatile unsigned char moisState=1;
 // cuurent moisture value
-volatile unsigned char mois=70;
+volatile unsigned char mois=50;
 // current moisture direction
 volatile unsigned char moisDirection=0;
 
 //old A value for the moisture rotary encoder
-volatile unsigned char oldMA=0;
+volatile unsigned char oldMA=3;
 //old B value for the moisture rotary encoder
-volatile unsigned char oldMB=0;
+volatile unsigned char oldMB=3;
 
 //old A value for the temperature rotary encoder
-volatile unsigned char oldTA=0;
+volatile unsigned char oldTA=3;
 //old B value for the temperature rotary encoder
-volatile unsigned char oldTB=0;
+volatile unsigned char oldTB=3;
 
 //string moisture level representatives
 char* moistureLevel[]={"dry","avg","wet"};
 //used to stringout rotary encoder values
 char str[4];
-
+//function for delaying
 void variable_delay_us(int);
 
 
@@ -55,9 +55,15 @@ int main(void) {
 	PCICR|=(1<<PCIE2);
 	PCMSK2|=(1<<PCINT16)|(1<<PCINT17)|(1<<PCINT18)|(1<<PCINT19);
 	//enable interrupts
+	oldMA=(PIND&(1<<PD0));
+	oldMB=(PIND&(1<<PD3));
+	oldTA=(PIND&(1<<PD2));
+	oldTB=(PIND&(1<<PD1));
 	sei();
+	lcd_moveto(0,0);
 	
 	while(1){
+		
 	}
 	return 0;
 	
@@ -65,17 +71,34 @@ int main(void) {
 
 ISR(PCINT2_vect)
 {
-	if(PD0!=oldMA || PD3!=oldMB){
+		
+		
+		/* if((PIND&(1<<PD0))!=oldMA){
+			lcd_stringout("0");
+		}
+		if((PIND&(1<<PD3))!=oldMB){
+			lcd_stringout("1");
+		}
+		if((PIND&(1<<PD1))!=oldTA){
+			lcd_stringout("2");
+		}
+		if((PIND&(1<<PD2))!=oldTB){
+			lcd_stringout("3");
+		} */
+		
+		
+		
+	if(((PIND&(1<<PD0))!=oldMA) || ((PIND&(1<<PD3))!=oldMB)){
 		//checking moisState and changing moisState and moisDirection accordingly
-		//PD1: A, PD2: B
+		//PD3: A, PD0: B
 		if(moisState==1)
 		{
-			if((PIND&(1<<PD0))!=0)
+			if((PIND&(1<<PD3))!=0)
 			{
 				moisState=2;
 				moisDirection=1;
 			}
-			if((PIND&(1<<PD3))!=0)
+			if((PIND&(1<<PD0))!=0)
 			{
 				moisState=4;
 				moisDirection=0;
@@ -83,12 +106,12 @@ ISR(PCINT2_vect)
 		}
 		else if (moisState==2)
 		{
-			if((PIND&(1<<PD0))==0)
+			if((PIND&(1<<PD3))==0)
 			{
 				moisState=1;
 				moisDirection=0;
 			}
-			if((PIND&(1<<PD3))!=0)
+			if((PIND&(1<<PD0))!=0)
 			{
 				moisState=3;
 				moisDirection=1;
@@ -96,12 +119,12 @@ ISR(PCINT2_vect)
 		}
 		else if (moisState==3)
 		{
-			if((PIND&(1<<PD0))==0)
+			if((PIND&(1<<PD3))==0)
 			{
 				moisState=4;
 				moisDirection=1;
 			}
-			if((PIND&(1<<PD3))==0)
+			if((PIND&(1<<PD0))==0)
 			{
 				moisState=2;
 				moisDirection=0;
@@ -109,12 +132,12 @@ ISR(PCINT2_vect)
 		}
 		else if (moisState==4)
 		{
-			if((PIND&(1<<PD0))!=0)
+			if((PIND&(1<<PD3))!=0)
 			{
 				moisState=3;
 				moisDirection=0;
 			}
-			if((PIND&(1<<PD3))==0)
+			if((PIND&(1<<PD0))==0)
 			{
 				moisState=1;
 				moisDirection=1;
@@ -125,6 +148,7 @@ ISR(PCINT2_vect)
 		if(moisDirection==0)
 		{
 			_delay_ms(10);
+			
 			if(mois<=0)
 			{
 				//lowest mois
@@ -133,13 +157,14 @@ ISR(PCINT2_vect)
 			else
 			{
 				//decrementing mois
-				mois=mois-1;
+				mois=mois-5;
 			}
 		}
 	//incrementing	
 		else
 		{
 			_delay_ms(10);
+			
 			if(mois>=100)
 			{
 				//highest mois
@@ -148,24 +173,28 @@ ISR(PCINT2_vect)
 			else
 			{
 				//incrementing mois
-				mois=mois+1;
+				mois=mois+5;
 			}
 		}
 		lcd_moveto(0,13);
+		
 		if(mois<=33){
 			lcd_stringout(moistureLevel[0]);
 		}
-		else if(mois>33 && mois<=66){
-			lcd_stringout(moistureLevel[0]);
+		else if(mois>33 && mois<=100){
+			lcd_stringout(moistureLevel[1]);
 		}
 		else{
 			lcd_stringout(moistureLevel[2]);
 		}
-		oldMA=PD0;
-		oldMB=PD3;
+		lcd_moveto(0,6);
+		snprintf(str,4, "%3d", mois);
+		lcd_stringout(str);
+		oldMA=(PIND&(1<<PD0));
+		oldMB=(PIND&(1<<PD3));
 	}
 	
-	if(oldTA!=PD1 || oldTB!=PD2){
+	if(((PIND&(1<<PD1))!=oldTA) || ((PIND&(1<<PD2))!=oldTB)){
 		//checking tempState and changing tempState and tempDirection accordingly
 		//PD1: A, PD2: B
 		if(tempState==1)
@@ -251,12 +280,16 @@ ISR(PCINT2_vect)
 				temp=temp+10;
 			}
 		}
+		
 		lcd_moveto(1,15);
 		snprintf(str,4, "%3d", temp);
 		lcd_stringout(str);
-		oldTA=PD1;
-		oldTB=PD2;
+		
+		oldTA=(PIND&(1<<PD1));
+		oldTB=(PIND&(1<<PD2));
+		
 	}	
+	
 }
 
 
