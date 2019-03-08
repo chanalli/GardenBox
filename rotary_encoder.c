@@ -39,7 +39,7 @@ volatile unsigned char oldTA=3;
 volatile unsigned char oldTB=3;
 
 //string moisture level representatives
-char* moistureLevel[]={"dry","avg","wet"};
+char* moistureLevel[]={"very dry","dry","avg", "damp","very damp"};
 //used to stringout rotary encoder values
 char str[4];
 //function for delaying
@@ -88,7 +88,7 @@ ISR(PCINT2_vect)
 		
 		
 		
-	if(((PIND&(1<<PD0))!=oldMA) || ((PIND&(1<<PD3))!=oldMB)){
+	if(((PIND&(1<<PD3))!=oldMA) || ((PIND&(1<<PD0))!=oldMB)){
 		//checking moisState and changing moisState and moisDirection accordingly
 		//PD3: A, PD0: B
 		if(moisState==1)
@@ -157,7 +157,7 @@ ISR(PCINT2_vect)
 			else
 			{
 				//decrementing mois
-				mois=mois-5;
+				mois=mois-10;
 			}
 		}
 	//incrementing	
@@ -165,33 +165,44 @@ ISR(PCINT2_vect)
 		{
 			_delay_ms(10);
 			
-			if(mois>=100)
+			if(mois>=120)
 			{
 				//highest mois
-				mois=100;
+				mois=120;
 			}	
 			else
 			{
 				//incrementing mois
-				mois=mois+5;
+				mois=mois+10;
 			}
 		}
-		lcd_moveto(0,13);
+		lcd_moveto(0,10);
+		lcd_stringout("         ");
+		lcd_moveto(0,10);
 		
-		if(mois<=33){
+		if(mois<=20){
 			lcd_stringout(moistureLevel[0]);
 		}
-		else if(mois>33 && mois<=100){
+		else if(mois<=40){
 			lcd_stringout(moistureLevel[1]);
 		}
-		else{
+		else if(mois<=60){
 			lcd_stringout(moistureLevel[2]);
 		}
-		lcd_moveto(0,6);
+		else if(mois<=80){
+			lcd_stringout(moistureLevel[3]);
+		}
+		else if(mois<=100){
+			lcd_stringout(moistureLevel[3]);
+		}
+		else{
+			lcd_stringout(moistureLevel[4]);
+		}
+		lcd_moveto(0,17);
 		snprintf(str,4, "%3d", mois);
-		lcd_stringout(str);
-		oldMA=(PIND&(1<<PD0));
-		oldMB=(PIND&(1<<PD3));
+		lcd_stringout(str); 
+		oldMA=(PIND&(1<<PD3));
+		oldMB=(PIND&(1<<PD0));
 	}
 	
 	if(((PIND&(1<<PD1))!=oldTA) || ((PIND&(1<<PD2))!=oldTB)){
