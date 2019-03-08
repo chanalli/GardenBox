@@ -127,6 +127,7 @@ ISR(PCINT0_vect)
 	}
 	//writecommand(0x01);
 	lcd_moveto(3,0);
+	//TODO
 	sprintf(str, "%d", count);
 	lcd_stringout(str);
 }

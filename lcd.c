@@ -47,6 +47,8 @@ const unsigned char str1[] PROGMEM = "Moisture: ";
 const unsigned char str2[] PROGMEM = "Temperature: ";
 const unsigned char str3[] PROGMEM = "Humidity: ";
 const unsigned char str4[] PROGMEM = "UV: ";
+char teststr[] = ">> USC EE459L <<78901234";
+
 #else
 const unsigned char str1[] PROGMEM = ">> at328-5.c lo <<901234";
 #endif
@@ -85,7 +87,8 @@ void lcd_init_display(){
   lcd_moveto(2, 0);
   lcd_stringout_P((char *)str3);      // Print string on line 3
   lcd_moveto(3, 0);
-  lcd_stringout_P((char *)str4);      // Print string on line 3
+  // lcd_stringout_P((char *)str4);      // Print string on line 3
+  lcd_stringout(teststr);
 
 }
 /*
