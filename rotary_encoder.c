@@ -63,10 +63,10 @@ char str[4];
 void variable_delay_us(int);
 
 
-int main(void) {
+int mainRE(void) {
 	lcd_init();
 	lcd_init_display();
-	
+
 	//initilize rotaryencoder interrupts
 	PORTD |=(1<<PD0)|(1<<PD3)|(1<<PD1)|(1<<PD2);
 	PCICR|=(1<<PCIE2);
@@ -78,7 +78,7 @@ int main(void) {
 	oldTB=(PIND&(1<<PD1));
 	sei();
 	lcd_moveto(0,0);
-	
+
 	while(1){
 		if(mois_change){
 			mois_change=0;
@@ -88,17 +88,17 @@ int main(void) {
 			temp_change=0;
 			temp_update();
 		}
-		
-		
+
+
 	}
 	return 0;
-	
+
 }
 
 ISR(PCINT2_vect)
 {
 	D=PIND;
-		
+
 		/* if((PIND&(1<<PD0))!=oldMA){
 			lcd_stringout("0");
 		}
@@ -115,11 +115,11 @@ ISR(PCINT2_vect)
 	MB=	(D&(1<<PD0));
 	TA=	(D&(1<<PD1));
 	TB=	(D&(1<<PD2));
-		
+
 	if((MA != oldMA) || (MB != oldMB)){
 		//checking moisState and changing moisState and moisDirection accordingly
 		//PD3: A, PD0: B
-		
+
 		if(moisState==1)
 		{
 			if(MA!=0)
@@ -170,16 +170,16 @@ ISR(PCINT2_vect)
 			{
 				moisState=1;
 				moisDirection=1;
-			}			
+			}
 		}
-		
-		
+
+
 		oldMA=MA;
 		oldMB=MB;
 		mois_change=1;
-		
+
 	}
-	
+
 	if((TA != oldTA) || (TB != oldTB)){
 		//checking tempState and changing tempState and tempDirection accordingly
 		//PD1: A, PD2: B
@@ -232,14 +232,14 @@ ISR(PCINT2_vect)
 			{
 				tempState=1;
 				tempDirection=1;
-			}			
+			}
 		}
 		oldTA=(TA);
 		oldTB=(TB);
 		temp_change=1;
-		
-	}	
-	
+
+	}
+
 }
 
 void temp_update(){
@@ -258,7 +258,7 @@ void temp_update(){
 				temp=temp-10;
 			}
 		}
-	//incrementing	
+	//incrementing
 		else
 		{
 			_delay_ms(10);
@@ -266,26 +266,26 @@ void temp_update(){
 			{
 				//highest temp
 				temp=120;
-			}	
+			}
 			else
 			{
 				//incrementing temp
 				temp=temp+10;
 			}
 		}
-		
+
 		lcd_moveto(1,15);
 		snprintf(str,4, "%3d", temp);
 		lcd_stringout(str);
-		
-		
+
+
 }
 void mois_update(){
 		//decrementing
 		if(moisDirection==0)
 		{
 			_delay_ms(10);
-			
+
 			if(mois<=0)
 			{
 				//lowest mois
@@ -297,16 +297,16 @@ void mois_update(){
 				mois=mois-10;
 			}
 		}
-	//incrementing	
+	//incrementing
 		else
 		{
 			_delay_ms(10);
-			
+
 			if(mois>=120)
 			{
 				//highest mois
 				mois=120;
-			}	
+			}
 			else
 			{
 				//incrementing mois
@@ -316,7 +316,7 @@ void mois_update(){
 	lcd_moveto(0,10);
 		lcd_stringout("         ");
 		lcd_moveto(0,10);
-		
+
 		if(mois<=20){
 			lcd_stringout(moistureLevel[0]);
 		}
@@ -337,8 +337,8 @@ void mois_update(){
 		}
 		lcd_moveto(0,17);
 		snprintf(str,4, "%3d", mois);
-		lcd_stringout(str); 
-		
+		lcd_stringout(str);
+
 }
 
 /*
