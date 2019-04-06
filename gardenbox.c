@@ -3,16 +3,19 @@
 *
 *
 **************************************************************/
-#include "moisture.c"
-#include "lcd.h"
-#include "lcd.c"
-#include "rotaryencoder.c"
+#include <stdio.h>
+#include <stdlib.h>
 
-int main(){
+#include "moisture.h"
+#include "lcd.h"
+#include "rotary_encoder.h"
+
+int main(void){
 
   //set all output input here or in each .c file?
 
   //call initialization of rotary encoder which calls LCD
-  mainRE();
+  printf("hi\n"); //how do I printf?
+
   return 0;
 }

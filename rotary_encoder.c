@@ -10,13 +10,11 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <stdio.h>
-
 #include <avr/interrupt.h>
 
+#include "rotary_encoder.h"
 #include "lcd.h"
 
-void mois_update();
-void temp_update();
 
 // current temperature rotary state
 volatile unsigned char tempState=1;
@@ -59,11 +57,8 @@ volatile unsigned char D=0;
 char* moistureLevel[]={"very dry","dry","avg", "damp","very damp"};
 //used to stringout rotary encoder values
 char str[4];
-//function for delaying
-void variable_delay_us(int);
 
-
-int mainRE(void) {
+void mainRE(void) {
 	lcd_init();
 	lcd_init_display();
 
@@ -91,8 +86,6 @@ int mainRE(void) {
 
 
 	}
-	return 0;
-
 }
 
 ISR(PCINT2_vect)

@@ -1,4 +1,7 @@
-currently main is in rotary encoder .c
-want to move it to gardenbox.c
+TODO:
 
-need to finish code for soil moisture sensor
+1. check rotary_encoder.h file: parameter for ISR()
+2. move all port/pin output/input declarations to gardenbox.c?
+
+4. need UV files
+5 need temperature & humidity files

@@ -9,7 +9,7 @@
 *              bit 3 (0x08) - output to R/W (Read/Write) input of display
 *              bit 2 (0x04) - output to E (Enable) input of display
 *       PORTB, bits 0-1, PORTD, bits 2-7 - Outputs to DB0-DB7 inputs of display.
-*
+* 
 *       The second line of the display starts at address 0x40.
 *
 *       Code adapted from Professor Allen Weber.

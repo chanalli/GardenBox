@@ -1,6 +1,8 @@
- #include <avr/io.h>
+#include <avr/io.h>
 #include <util/delay.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include "moisture.h"
 
 int readsoil(int val){
   //turn VDD pin on to a HIGH
@@ -10,20 +12,20 @@ int readsoil(int val){
   //turn VDD pin to a low
   //set pin to LOW
   return val;
-};
+}; 
 
 int moistureReader()
 {
   int val = 0; //value for storing moisture value
 
   //set input from soil
-  DDRC2 = 0x00;
+  DDRC |= (1 << PC2);
   //set output for VDD
   //turn on and off this pinout for VDD
   //for the moisture sensor
-  DDRB1 0x01;
-  //set output to relay
-  DDRB1 = 0x01;
+  // DDRB[1] 0x01;
+  // //set output to relay
+  // DDRB[1] = 0x01;
 
   while(1){
     val = readsoil(val);
