@@ -1,7 +1,7 @@
 DEVICE     = atmega328p
 CLOCK      = 7372800
 PROGRAMMER = -c usbtiny -P usb
-OBJECTS    = lcd.o moisture.o rotary_encoder.o gardenbox.o
+OBJECTS    = lcd.o moisture.o rotary_encoder.o gardenbox.o i2c.o
 FUSES      = -U hfuse:w:0xd9:m -U lfuse:w:0xe0:m
 # Fuse Low Byte = 0xe0   Fuse High Byte = 0xd9   Fuse Extended Byte = 0xff
 # Bit 7: CKDIV8  = 1     Bit 7: RSTDISBL  = 1    Bit 7:
@@ -30,6 +30,8 @@ gardenbox.o: gardenbox.c
 lcd.o: lcd.c lcd.h
 moisture.o: moisture.c
 rotary_encoder.o: rotary_encoder.c lcd.h
+i2c.o: i2c.c i2c.h
+
 
 .c.o:
 	$(COMPILE) -c $< -o $@

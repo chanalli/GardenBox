@@ -8,11 +8,12 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
-
+#include "i2c.h"
 #include "rotary_encoder.h"
 #include "lcd.h"
 #include "moisture.h"
 #include "LEDTest.h"
+
 
 // temperature variables
 volatile unsigned char tempState=1;
@@ -41,6 +42,10 @@ volatile unsigned char temp_change=0;
 
 volatile unsigned char D=0;
 
+//UVRAY registers
+uint8_t rdata[2]; 
+uint8_t commandCode=0;
+uint8_t config[2]={0,0};
 
 
 int main(void){
@@ -58,6 +63,9 @@ int main(void){
 	oldTA=(PIND&(1<<PD2));
 	oldTB=(PIND&(1<<PD1));
 	sei();
+	uv_init(&commandCode, config);
+	commandCode=7;
+	
   while(1){
 		if(mois_change){
 			mois_change=0;
@@ -67,6 +75,8 @@ int main(void){
 			temp_change=0;
 			temp_update(tempDirection, &temp);
 		}
+		check_uv(&commandCode, rdata);
+		
   }
   return 0;
 }
