@@ -9,7 +9,7 @@
 *              bit 3 (0x08) - output to R/W (Read/Write) input of display
 *              bit 2 (0x04) - output to E (Enable) input of display
 *       PORTB, bits 0-1, PORTD, bits 2-7 - Outputs to DB0-DB7 inputs of display.
-* 
+*
 *       The second line of the display starts at address 0x40.
 *
 *       Code adapted from Professor Allen Weber.
@@ -47,7 +47,6 @@ const unsigned char str1[] PROGMEM = "Moisture: ";
 const unsigned char str2[] PROGMEM = "Temperature: ";
 const unsigned char str3[] PROGMEM = "Humidity: ";
 const unsigned char str4[] PROGMEM = "UV: ";
-char teststr[] = ">> USC EE459L <<78901234";
 
 #else
 const unsigned char str1[] PROGMEM = ">> at328-5.c lo <<901234";
@@ -86,9 +85,9 @@ void lcd_init_display(){
   lcd_stringout_P((char *)str2);      // Print string on line 2
   lcd_moveto(2, 0);
   lcd_stringout_P((char *)str3);      // Print string on line 3
-  lcd_moveto(3, 0);
-  // lcd_stringout_P((char *)str4);      // Print string on line 3
-  lcd_stringout(teststr);
+  lcd_moveto(3,0);
+  lcd_stringout_P((char *)str4);
+
 
 }
 /*

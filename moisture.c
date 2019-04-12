@@ -12,7 +12,7 @@ int readsoil(int val){
   //turn VDD pin to a low
   //set pin to LOW
   return val;
-}; 
+};
 
 int moistureReader()
 {
