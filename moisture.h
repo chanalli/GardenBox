@@ -1,2 +1,1 @@
-int readsoil(int);
-int moistureReader();
+int readMoisture();

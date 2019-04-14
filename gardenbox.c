@@ -8,6 +8,7 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
+
 #include "i2c.h"
 #include "rotary_encoder.h"
 #include "lcd.h"
@@ -44,11 +45,11 @@ volatile unsigned char D=0;
 volatile unsigned char C=0;
 
 //UVRAY registers
-uint8_t UVA[2]; 
-uint8_t UVB[2]; 
-uint8_t UVComp1[2]; 
-uint8_t UVComp2[2]; 
-uint8_t IDnum[2]; 
+uint8_t UVA[2];
+uint8_t UVB[2];
+uint8_t UVComp1[2];
+uint8_t UVComp2[2];
+uint8_t IDnum[2];
 float index;
 //UVRAY codes
 uint8_t configCode=0;
@@ -59,10 +60,15 @@ uint8_t UVComp2Code=11;
 uint8_t IDnumCode=12;
 uint8_t config[2]={0,0};
 
+//moisture senor variables
+int moisture = 0;
+void initPorts();
 
 
 int main(void){
   //set all output input here or in each .c file?
+  initPorts();
+
   //initilize lcd
   lcd_init();
   lcd_init_display();
@@ -73,7 +79,7 @@ int main(void){
 	PCICR|=(1<<PCIE1);
 	PCMSK2|=(1<<PCINT18)|(1<<PCINT19);
 	PCMSK1|=(1<<PCINT8)|(1<<PCINT9);
-	
+
 	//enable interrupts
 	oldMA=(PINC&(1<<PC1));
 	oldMB=(PIND&(1<<PD3));
@@ -82,8 +88,8 @@ int main(void){
 	sei();
 	//setting up i2c
 	uv_init(&configCode, config);
-	
-	
+
+
   while(1){
 		//checking rotary encoders
 		if(mois_change){
@@ -101,9 +107,28 @@ int main(void){
 		i2c_io(0x20, &UVComp2Code, 1, NULL, 0, UVComp2, 2);
 		index = get_index(UVA, UVB, UVComp1, UVComp2);
 		//display_index(index);
-		
+
+    //check moisture
+    moisture = readMoisture();
+    if(moisture < 50){
+      //turn on pump
+      PORTB |= 0x01;
+    }
+    else if(moisture > 200){
+      //turn off pump
+      PORTB &= 0xFE;
+    }
+
   }
+
   return 0;
+}
+
+void initPorts(){
+  //PB1 & PB0 output to moisture sensor & relay/pump
+  DDRB = 0x03;
+  //makes relay and moisture low at first
+  PORTB  = 0x00;
 }
 ISR(PCINT1_vect)
 {
