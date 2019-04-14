@@ -24,11 +24,45 @@
 #include "lcd.h"
 #include "i2c.h"
 
+#define NUM_INTEGRATION_TIMES 5
 
 uint8_t i2c_io(uint8_t, uint8_t *, uint16_t, uint8_t *, uint16_t, uint8_t *, uint16_t);
 void i2c_init(unsigned char);
 //used to stringout rotary encoder values
-char str[4];
+char str[50];
+const float UV_ALPHA = 1.0;
+const float UV_BETA = 1.0;
+const float UV_GAMMA = 1.0;
+const float UV_DELTA = 1.0;
+
+const float UVA_A_COEF = 2.22;
+const float UVA_B_COEF = 1.33;
+const float UVA_C_COEF = 2.95;
+const float UVA_D_COEF = 1.75;
+
+
+#define UVA_RESPONSIVITY_100MS_UNCOVERED 0.001111
+#define UVB_RESPONSIVITY_100MS_UNCOVERED 0.00125
+
+const float UVA_RESPONSIVITY[NUM_INTEGRATION_TIMES] = 
+{
+    UVA_RESPONSIVITY_100MS_UNCOVERED / 0.5016286645, // 50ms
+    UVA_RESPONSIVITY_100MS_UNCOVERED,                // 100ms
+    UVA_RESPONSIVITY_100MS_UNCOVERED / 2.039087948,  // 200ms
+    UVA_RESPONSIVITY_100MS_UNCOVERED / 3.781758958,  // 400ms
+    UVA_RESPONSIVITY_100MS_UNCOVERED / 7.371335505   // 800ms
+};
+
+const float UVB_RESPONSIVITY[NUM_INTEGRATION_TIMES] = 
+{
+    UVB_RESPONSIVITY_100MS_UNCOVERED / 0.5016286645, // 50ms
+    UVB_RESPONSIVITY_100MS_UNCOVERED,                // 100ms
+    UVB_RESPONSIVITY_100MS_UNCOVERED / 2.039087948,  // 200ms
+    UVB_RESPONSIVITY_100MS_UNCOVERED / 3.781758958,  // 400ms
+    UVB_RESPONSIVITY_100MS_UNCOVERED / 7.371335505   // 800ms
+};
+
+
 #define FOSC 7372800            // Clock frequency = Oscillator freq.
 #define BAUD 9600               // UART0 baud rate
 #define MYUBRR FOSC/16/BAUD-1   // Value for UBRR0 register
@@ -41,7 +75,8 @@ void uv_init(uint8_t *commandCode, uint8_t *config){
 	i2c_io(0x20, commandCode, 1, config, 2, NULL, 0);
 	i2c_init(BDIV); 
 }
-void check_uv(uint8_t *commandCode, uint8_t *rdata){
+
+void get_display_data(uint8_t *commandCode, uint8_t *rdata){
 	i2c_io(0x20, commandCode, 1, NULL, 0, rdata, 2);
 	lcd_moveto(3,15);
 	snprintf(str,4, "%3d", rdata[0]);
@@ -49,6 +84,42 @@ void check_uv(uint8_t *commandCode, uint8_t *rdata){
 	snprintf(str,4, "%3d", rdata[1]);
 	lcd_stringout(str);
 }
+void display_index(float index){
+	lcd_moveto(3,15);
+	int wholePart = index;
+	int fractPart = (index - wholePart) * 10;
+	sprintf(str, "%d.%d", wholePart, fractPart);
+	lcd_stringout(str);
+}
+void print_float(float num){
+	lcd_moveto(3,10);
+	int wholePart = num;
+	int fractPart = (num - wholePart) * 100000;
+	sprintf(str, "%d.00%d", wholePart, fractPart);
+	lcd_stringout(str);
+}
+float get_index(uint8_t * uva, uint8_t * uvb, uint8_t * uvcomp1, uint8_t * uvcomp2){
+	
+	float aResponsivity = UVA_RESPONSIVITY[2];
+    float bResponsivity = UVB_RESPONSIVITY[2];
+	
+	uint16_t rawUva=(uva[0] & 0x00FF) | ((uva[1] & 0x00FF) << 8);
+	uint16_t rawUvb=(uvb[0] & 0x00FF) | ((uvb[1] & 0x00FF) << 8);
+	
+	uint16_t uvComp1=(uvcomp1[0] & 0x00FF) | ((uvcomp1[1] &0x00FF) << 8);
+	uint16_t uvComp2=(uvcomp2[0] & 0x00FF) | ((uvcomp2[1] & 0x00FF) << 8);
+	
+	float uvaCalc = (float)rawUva - ((UVA_A_COEF * UV_ALPHA * (float)uvComp1) / UV_GAMMA) - ((UVA_B_COEF * UV_ALPHA * (float)uvComp2) / UV_DELTA);
+	float uvbCalc = (float)rawUvb - ((UVA_C_COEF * UV_BETA * (float)uvComp1) / UV_GAMMA)- ((UVA_D_COEF * UV_BETA * (float)uvComp2) / UV_DELTA);
+	
+    float uvia = uvaCalc * (1.0 / UV_ALPHA) * aResponsivity;
+    float uvib = uvbCalc * (1.0 / UV_BETA) * bResponsivity;
+	print_float(uvia);
+    float index = (uvia + uvib) / 2.0;
+	
+	return index;
+}
+
 
 /*
   i2c_io - write and read bytes to a slave I2C device

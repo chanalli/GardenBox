@@ -42,10 +42,23 @@ volatile unsigned char temp_change=0;
 
 volatile unsigned char D=0;
 volatile unsigned char C=0;
+
 //UVRAY registers
-uint8_t rdata[2]; 
-uint8_t commandCode=0;
+uint8_t UVA[2]; 
+uint8_t UVB[2]; 
+uint8_t UVComp1[2]; 
+uint8_t UVComp2[2]; 
+uint8_t IDnum[2]; 
+float index;
+//UVRAY codes
+uint8_t configCode=0;
+uint8_t UVACode=7;
+uint8_t UVBCode=9;
+uint8_t UVComp1Code=10;
+uint8_t UVComp2Code=11;
+uint8_t IDnumCode=12;
 uint8_t config[2]={0,0};
+
 
 
 int main(void){
@@ -67,10 +80,12 @@ int main(void){
 	oldTA=(PIND&(1<<PD2));
 	oldTB=(PINC&(1<<PC0));
 	sei();
-	uv_init(&commandCode, config);
-	commandCode=7;
+	//setting up i2c
+	uv_init(&configCode, config);
+	
 	
   while(1){
+		//checking rotary encoders
 		if(mois_change){
 			mois_change=0;
 			mois_update(moisDirection, &mois);
@@ -79,7 +94,13 @@ int main(void){
 			temp_change=0;
 			temp_update(tempDirection, &temp);
 		}
-		check_uv(&commandCode, rdata);
+		//checking UV
+		i2c_io(0x20, &UVACode, 1, NULL, 0, UVA, 2);
+		i2c_io(0x20, &UVBCode, 1, NULL, 0, UVB, 2);
+		i2c_io(0x20, &UVComp1Code, 1, NULL, 0, UVComp1, 2);
+		i2c_io(0x20, &UVComp2Code, 1, NULL, 0, UVComp2, 2);
+		index = get_index(UVA, UVB, UVComp1, UVComp2);
+		//display_index(index);
 		
   }
   return 0;
