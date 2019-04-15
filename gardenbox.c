@@ -129,6 +129,9 @@ void initPorts(){
   DDRB = 0x03;
   //makes relay and moisture low at first
   PORTB  = 0x00;
+  //make PC2 input
+  DDRC = 0x00; 
+
 }
 ISR(PCINT1_vect)
 {
