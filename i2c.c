@@ -28,7 +28,10 @@
 
 uint8_t i2c_io(uint8_t, uint8_t *, uint16_t, uint8_t *, uint16_t, uint8_t *, uint16_t);
 void i2c_init(unsigned char);
-//used to stringout rotary encoder values
+
+//string moisture level representatives
+char* UVLevel[]={"no UV rays", "shady     ","sunny    "};
+//used to stringout values
 char str[50];
 const float UV_ALPHA = 1.0;
 const float UV_BETA = 1.0;
@@ -85,10 +88,10 @@ void get_display_data(uint8_t *commandCode, uint8_t *rdata){
 	lcd_stringout(str);
 }
 void display_index(float index){
-	lcd_moveto(3,15);
+	lcd_moveto(3,9);
 	int wholePart = index;
-	int fractPart = (index - wholePart) * 10;
-	sprintf(str, "%d.%d", wholePart, fractPart);
+	int fractPart = (index - wholePart) * 100000;
+	sprintf(str, "%d.00%d", wholePart, fractPart);
 	lcd_stringout(str);
 }
 void print_float(float num){
@@ -97,6 +100,18 @@ void print_float(float num){
 	int fractPart = (num - wholePart) * 100000;
 	sprintf(str, "%d.00%d", wholePart, fractPart);
 	lcd_stringout(str);
+}
+void display_UV_level(float index){
+	lcd_moveto(3,9);
+	if(index<0){
+		lcd_stringout(UVLevel[0]);
+	}
+	else if (index<0.8){
+		lcd_stringout(UVLevel[1]);
+	}
+	else if (index>=0.8){
+		lcd_stringout(UVLevel[2]);
+	}
 }
 float get_index(uint8_t * uva, uint8_t * uvb, uint8_t * uvcomp1, uint8_t * uvcomp2){
 	
@@ -114,7 +129,7 @@ float get_index(uint8_t * uva, uint8_t * uvb, uint8_t * uvcomp1, uint8_t * uvcom
 	
     float uvia = uvaCalc * (1.0 / UV_ALPHA) * aResponsivity;
     float uvib = uvbCalc * (1.0 / UV_BETA) * bResponsivity;
-	print_float(uvia);
+	//print_float(uvia);
     float index = (uvia + uvib) / 2.0;
 	
 	return index;

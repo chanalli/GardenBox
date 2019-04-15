@@ -7,3 +7,4 @@ void get_display_data(uint8_t *, uint8_t *);
 float get_index(uint8_t *, uint8_t *, uint8_t *, uint8_t *);
 void display_index(float);
 void print_float(float);
+void display_UV_level(float);

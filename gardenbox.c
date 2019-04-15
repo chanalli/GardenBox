@@ -100,7 +100,7 @@ int main(void){
 		i2c_io(0x20, &UVComp1Code, 1, NULL, 0, UVComp1, 2);
 		i2c_io(0x20, &UVComp2Code, 1, NULL, 0, UVComp2, 2);
 		index = get_index(UVA, UVB, UVComp1, UVComp2);
-		//display_index(index);
+		display_UV_level(index);
 		
   }
   return 0;
