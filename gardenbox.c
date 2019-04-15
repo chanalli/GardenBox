@@ -129,8 +129,16 @@ void initPorts(){
   DDRB = 0x03;
   //makes relay and moisture low at first
   PORTB  = 0x00;
-  //make PC2 input
-  DDRC = 0x00; 
+  //make PC2 analog input
+  DDRC &= 0xFD; //11111101
+
+  //initiaize ADC registers
+  //ADMUX: 01(AVCC input)0/1(10bit/8bits)0 0000(MUX3:MUX0 for input channel)
+  // 0110 0010 = 0x62
+  ADMUX = 0x62;
+  //ADCSRA: 1 (enable conversation) 0 (start conversation = 1) 00 0(enables interrupts) 000(prescaler value 11 for 128)
+  // 1000 0111 = 0x87;
+  ADCSRA = 0x87;
 
 }
 ISR(PCINT1_vect)

@@ -6,7 +6,7 @@
 
 int readMoisture(){
 
-  int value = 0;
+  unsigned int value = 0;
 
   //PB1 high signal
   PORTB |= 0x02;
@@ -15,17 +15,14 @@ int readMoisture(){
 
   //read value with ADC TODO!!
   /* Enable the ADC */
-	ADCSRA |= 0x80;
-  // while((ADCSRA & ) != 0){
-  //
-  // }
+	ADCSRA |= 0xC0; //1100 0000
+  while((ADCSRA & 0xC0) != 0){
+  }
+
+  value = ADCH;
 
   //PB1 low signal
   PORTB &= 0xFD;
   //return read value
   return value;
-}
-
-uint16_t adc_read(uint8_t adcx){
-
 }
