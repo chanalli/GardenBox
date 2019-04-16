@@ -61,6 +61,7 @@ uint8_t config[2]={0,0};
 
 //moisture
 void initPorts();
+int moisture = 0;
 
 int main(void){
   //set all output input here or in each .c file?
@@ -118,7 +119,6 @@ int main(void){
 
   }
 
-  }
   return 0;
 }
 
