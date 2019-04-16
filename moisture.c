@@ -15,10 +15,12 @@ int readMoisture(){
 
   //read value with ADC TODO!!
   /* Enable the ADC */
-	ADCSRA |= 0xC0; //1100 0000
+  ADCSRA |= 0xC0; //1100 0000
   while((ADCSRA & 0xC0) != 0){
+    //wait for ADC to finish
   }
 
+  //get value
   value = ADCH;
 
   //PB1 low signal
