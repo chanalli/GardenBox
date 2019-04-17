@@ -123,12 +123,13 @@ int main(void){
 }
 
 void initPorts(){
-  //PB1 & PB0 output to moisture sensor & relay/pump
+  //PB1 & PB0 OUTPUT to moisture sensor & relay/pump
   DDRB = 0x03;
-  //makes relay and moisture low at first
+  //makes relay and moisture OUTPUT low at first
   PORTB  = 0x00;
-  //make PC2 analog input
-  DDRC &= 0xFD; //11111101
+
+  //make PC2 analog INPUT
+  DDRC &= 0xFB; //1111 1011
 
   //initiaize ADC registers
   //ADMUX: 01(AVCC input)0/1(10bit/8bits)0 0000(MUX3:MUX0 for input channel)
