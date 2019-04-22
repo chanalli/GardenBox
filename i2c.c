@@ -135,6 +135,43 @@ float get_index(uint8_t * uva, uint8_t * uvb, uint8_t * uvcomp1, uint8_t * uvcom
 	return index;
 }
 
+/*Temperature Sensor Functions*/
+
+void config_temp_reg(uint8_t *commandCode, uint8_t *msg)
+{
+	i2c_io(0x90, commandCode, 1, msg, 1, NULL, 0);	//Initialize configuration register to continuous conversion
+	_delay_ms(10);
+}
+
+void start_conv(uint8_t *commandCode)
+{
+	i2c_io(0x90, commandCode, 1, NULL, 0, NULL, 0);	//Start conversion
+}
+
+void init_temp(uint8_t *commandCode1, uint8_t *commandCode2, uint8_t *msg)
+{
+	i2c_init(BDIV);
+	config_temp_reg(commandCode1, msg);
+	start_conv(commandCode2);
+}
+
+
+float get_temp_data(uint8_t *commandCode, uint8_t *rdata)
+{
+	i2c_io(0x91, commandCode, 1, NULL, 0, rdata, 2);	//read in two bytes of temperature data
+	
+	float decimal = 0;
+	float whole = rdata[0];
+	if(rdata[1] == 128)
+	{
+		decimal = 5;
+	}
+	
+	float temp = whole + (decimal/10);
+	
+	return temp;
+}
+
 
 /*
   i2c_io - write and read bytes to a slave I2C device
