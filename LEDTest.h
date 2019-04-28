@@ -1,2 +1,0 @@
-int turnOn();
-int turnOff();
