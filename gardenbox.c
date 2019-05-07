@@ -8,16 +8,16 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
-
 #include "i2c.h"
 #include "rotary_encoder.h"
 #include "lcd.h"
 #include "moisture.h"
+#include "LEDTest.h"
 
 
 // temperature variables
 volatile unsigned char tempState=1;
-volatile unsigned char temp=50;
+volatile unsigned char temp_rotary=50;
 volatile unsigned char tempDirection=0;
 
 // moisture variables
@@ -59,6 +59,14 @@ uint8_t UVComp2Code=11;
 uint8_t IDnumCode=12;
 uint8_t config[2]={0,0};
 
+//Temp vars
+uint8_t writeBuf = 2;	//0x02
+uint8_t tempBuf[2];
+uint8_t readTemp = 170;	//0xAA
+	
+uint8_t access_config = 172;	//0xAC
+uint8_t start_convert = 238;	//0xEE
+
 //moisture
 void initPorts();
 int moisture = 0;
@@ -86,7 +94,7 @@ int main(void){
 	sei();
 	//setting up i2c
 	uv_init(&configCode, config);
-
+	init_temp(&access_config, &start_convert, &writeBuf);
 
   while(1){
 		//checking rotary encoders
@@ -96,7 +104,7 @@ int main(void){
 		}
 		if(temp_change){
 			temp_change=0;
-			temp_update(tempDirection, &temp);
+			temp_update(tempDirection, &temp_rotary);
 		}
 		//checking UV
 		i2c_io(0x20, &UVACode, 1, NULL, 0, UVA, 2);
@@ -105,6 +113,36 @@ int main(void){
 		i2c_io(0x20, &UVComp2Code, 1, NULL, 0, UVComp2, 2);
 		index = get_index(UVA, UVB, UVComp1, UVComp2);
 		display_UV_level(index);
+		//checking temp
+		float temp = get_temp_data(&readTemp, &tempBuf);
+
+		//Printing temp
+		int whole = temp;
+		int decimal = (temp - whole) * 10;
+	
+		lcd_moveto(2,0);
+	
+		char temp_c[5];
+		sprintf(temp_c,"Sensor Data:%2d.%d C", whole, decimal);
+		lcd_stringout(temp_c);	
+		
+		//Print User defined temperature threshold
+		
+		
+		//If Temp is less than threshold, then turn on heating lamp
+		//turning on light bulb if temperature dips below threshold
+		DDRC |= (1 << PC3);	//init port
+		
+		if(temp < temp_rotary)
+		{
+			//turn relay on
+			PORTC |= (1 << PC3);
+		}
+		else
+		{
+			PORTC &= (0 << PC3);
+		}
+		
 
     //check moisture
     moisture = readMoisture();
